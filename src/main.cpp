@@ -3,31 +3,16 @@
 #include "funny_time.h"
 #include "simpleTimer.h"
 
-#define WS2812DMA_IMPLEMENTATION
+#define WS2812BSIMPLE_IMPLEMENTATION
 //#define WSRBG //For WS2816C's.
 #define WSGRB // For SK6805-EC15
-#define NR_LEDS 191
-#define DMALEDS 8
 
-#include "ws2812b_dma_spi_led_driver.h"
+//#include "ws2812b_dma_spi_led_driver.h"
+#include "ws2812b_simple.h"
 
 #include "color_utilities.h"
 
-uint16_t phases[NR_LEDS];
-int frameno;
-volatile int tween = -NR_LEDS;
-
-uint32_t WS2812BLEDCallback( int ledno )
-{
-	uint8_t index = (phases[ledno])>>8;
-	uint8_t rsbase = sintable[index];
-	uint8_t rs = rsbase>>3;
-	uint32_t fire = ((huetable[(rs+190)&0xff]>>1)<<16) | (huetable[(rs+30)&0xff]) | ((huetable[(rs+0)]>>1)<<8);
-	uint32_t ice  = 0x7f0000 | ((rsbase>>1)<<8) | ((rsbase>>1));
-
-	// Because this chip doesn't natively support multiplies, we are going to avoid tweening of 1..254.
-	return TweenHexColors( fire, ice, ((tween + ledno)>0)?255:0 ); // Where "tween" is a value from 0 ... 255
-}
+#define NUM_LEDS 8
 
 int main()
  {
@@ -39,52 +24,23 @@ int main()
 
 	funGpioInitD();
 	
-	int k;
-	WS2812BDMAInit( );
+	uint8_t leds[NUM_LEDS * 3] = {0};
 
-	frameno = 0;
-
-	for( k = 0; k < NR_LEDS; k++ ) phases[k] = k<<8;
-
-
-	int tweendir = 0;
-
+	uint8_t hue = 0;
+	uint32_t rgb;
 	while(1)
 	{
-	
-		//GPIOD->BSHR = 1;	 // Turn on GPIOD0
-		// Wait for LEDs to totally finish.
-		Delay_Ms( 12 );
-		//GPIOD->BSHR = 1<<16; // Turn it off
-
-		while( WS2812BLEDInUse );
-
-		frameno++;
-
-		if( frameno == 1024 )
+		for (uint8_t i = 0; i < NUM_LEDS; i++)
 		{
-			tweendir = 1;
+			//uint8_t* tmp = (uint8_t*)(&ledsEHS[i]);
+			rgb = EHSVtoHEX(hue, 255, 16);
+			uint8_t* tmp = (uint8_t*)(&rgb);
+			leds[i*3] = tmp[0];
+			leds[i*3+1] = tmp[1];
+			leds[i*3+2] = tmp[2];
 		}
-		if( frameno == 2048 )
-		{
-			tweendir = -1;
-			frameno = 0;
-		}
-
-		if( tweendir )
-		{
-			int t = tween + tweendir;
-			if( t > 255 ) t = 255;
-			if( t < -NR_LEDS ) t = -NR_LEDS;
-			tween = t;
-		}
-
-		for( k = 0; k < NR_LEDS; k++ )
-		{
-			phases[k] += ((((rands[k&0xff])+0xf)<<2) + (((rands[k&0xff])+0xf)<<1))>>1;
-		}
-
-		WS2812BDMAStart( NR_LEDS );
-	}
-	
+		WS2812BSimpleSend(GPIOC, 6, (uint8_t*)leds, sizeof(leds));
+		Delay_Ms(50);
+		hue--;
+	}	
 }
