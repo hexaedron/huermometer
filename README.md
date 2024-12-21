@@ -21,4 +21,3 @@ You will need [ch32v00fun](https://github.com/cnlohr/ch32v003fun/) and [funny_li
 
 ![photo](/pics/pic1.jpg)
 ![photo](/pics/pic2.jpg)
-![photo](/pics/vid.mp4)
