@@ -42,7 +42,7 @@ int16_t filterTemp(void)
 #include "color_utilities.h"
 
 int main()
- {
+{
 	SystemInit();
 #ifdef WCH_FAST_INTERRUPT_ENABLED
 	__set_INTSYSCR(0x3); // [Experimental] enable fast interrupt feature
@@ -84,8 +84,7 @@ int main()
 			leds[i*3+2] = tmp[2];
 		}
 		WS2812BSimpleSend(GPIOC, 6, (uint8_t*)leds, sizeof(leds));
-		//Delay_Ms(10);
 		start++; 
 		if(start > 1 ) start = 0;
 	}	
- }
+}
